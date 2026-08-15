@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -381,14 +381,36 @@
     <div class="spacer"></div>
   </div>
 
+  <!-- ===================== SETUP (una sola vez) ===================== -->
+  <div class="screen" id="screen-setup">
+    <div class="spacer" style="flex:0.3"></div>
+    <div class="card-icon">🛠️</div>
+    <h2>Configuración inicial</h2>
+    <p class="sub" style="max-width:38ch;">Esto se hace una sola vez, antes de mandar el link a nadie. Crea el espacio donde se van a guardar las notas.</p>
+    <div class="field">
+      <label for="setupEmail">Tu email</label>
+      <input type="text" id="setupEmail" placeholder="vos@ejemplo.com">
+    </div>
+    <button class="btn btn-primary" id="btnCreateBucket">Crear almacenamiento</button>
+    <p class="error-msg" id="setupError"></p>
+    <div id="setupResult" style="display:none; margin-top:1.4rem;">
+      <p class="sub" style="color:var(--gold); margin-bottom:.6rem;">¡Listo! Copiá este código:</p>
+      <div class="example" id="bucketIdBox" style="font-family:monospace; font-size:1.05rem; user-select:all; text-align:center;"></div>
+      <p class="helper">Pegalo en la línea <code>KVDB_BUCKET = ""</code> cerca del final del archivo, guardá, y volvé a subirlo a GitHub. Después ya podés compartir el link con todos.</p>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
 </div>
 
 <script>
   // ============ CONFIGURACIÓN — editá esto antes de compartir el link ============
   const NOMBRE = "Mirely Paola";     // el nombre de tu amiga
   const HOST_PIN = "2026";           // código para entrar al modo anfitrión
+  const KVDB_BUCKET = "RPgQabbuLob5MoD1AAf9qk"; // bucket creado para este juego
   // =================================================================================
 
+  const KVDB_BASE = KVDB_BUCKET ? `https://kvdb.io/${KVDB_BUCKET}` : null;
   const PREFIX = 'note:';
   let hostNotes = [];
   let currentIndex = 0;
@@ -403,10 +425,58 @@
     document.querySelectorAll('.js-nombre').forEach(el => el.textContent = NOMBRE);
   }
 
+  // ---------- Capa de almacenamiento (KVdb.io) ----------
+  async function kvSet(key, value){
+    const res = await fetch(`${KVDB_BASE}/${encodeURIComponent(key)}`, { method:'POST', body: value });
+    if(!res.ok) throw new Error('set failed ' + res.status);
+    return true;
+  }
+  async function kvGet(key){
+    const res = await fetch(`${KVDB_BASE}/${encodeURIComponent(key)}`);
+    if(res.status === 404) return null;
+    if(!res.ok) throw new Error('get failed ' + res.status);
+    return await res.text();
+  }
+  async function kvDelete(key){
+    const res = await fetch(`${KVDB_BASE}/${encodeURIComponent(key)}`, { method:'DELETE' });
+    return res.ok;
+  }
+  async function kvListKeys(prefix){
+    const res = await fetch(`${KVDB_BASE}/?prefix=${encodeURIComponent(prefix)}`);
+    if(!res.ok) throw new Error('list failed ' + res.status);
+    const text = await res.text();
+    return text.split('\n').map(s => s.trim()).filter(Boolean);
+  }
+
+  document.getElementById('btnCreateBucket').addEventListener('click', async () => {
+    const emailEl = document.getElementById('setupEmail');
+    const errEl = document.getElementById('setupError');
+    const email = emailEl.value.trim();
+    if(!email || !email.includes('@')){ errEl.textContent = 'Poné un email válido.'; return; }
+    const btn = document.getElementById('btnCreateBucket');
+    btn.disabled = true; btn.textContent = 'Creando…'; errEl.textContent = '';
+    try{
+      const res = await fetch('https://kvdb.io/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'email=' + encodeURIComponent(email)
+      });
+      if(!res.ok) throw new Error('status ' + res.status);
+      const bucketId = (await res.text()).trim();
+      document.getElementById('bucketIdBox').textContent = bucketId;
+      document.getElementById('setupResult').style.display = 'block';
+    }catch(e){
+      console.error(e);
+      errEl.textContent = 'No se pudo crear. Revisá tu conexión y probá de nuevo.';
+    }finally{
+      btn.disabled = false; btn.textContent = 'Crear almacenamiento';
+    }
+  });
+
   async function fetchNoteCount(){
     try{
-      const result = await window.storage.list(PREFIX, true);
-      return (result && result.keys) ? result.keys.length : 0;
+      const keys = await kvListKeys(PREFIX);
+      return keys.length;
     }catch(e){
       console.error('No se pudo contar las notas', e);
       return null;
@@ -416,13 +486,12 @@
   async function fetchAllNotes(){
     const notes = [];
     try{
-      const listResult = await window.storage.list(PREFIX, true);
-      const keys = (listResult && listResult.keys) ? listResult.keys : [];
+      const keys = await kvListKeys(PREFIX);
       for(const key of keys){
         try{
-          const r = await window.storage.get(key, true);
-          if(r && r.value){
-            const parsed = JSON.parse(r.value);
+          const raw = await kvGet(key);
+          if(raw){
+            const parsed = JSON.parse(raw);
             if(parsed && parsed.phrase) notes.push({ key, ...parsed });
           }
         }catch(e){ /* nota individual rota, la salteamos */ }
@@ -484,8 +553,7 @@
     const value = JSON.stringify({ name, phrase, submittedAt: Date.now() });
 
     try{
-      const result = await window.storage.set(id, value, true);
-      if(!result) throw new Error('sin resultado');
+      await kvSet(id, value);
       nameEl.value = '';
       phraseEl.value = '';
       showScreen('screen-guest-done');
@@ -543,10 +611,9 @@
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Borrando…';
     try{
-      const listResult = await window.storage.list(PREFIX, true);
-      const keys = (listResult && listResult.keys) ? listResult.keys : [];
+      const keys = await kvListKeys(PREFIX);
       for(const key of keys){
-        try{ await window.storage.delete(key, true); }catch(e){ /* seguimos igual */ }
+        try{ await kvDelete(key); }catch(e){ /* seguimos igual */ }
       }
       dashEl.innerHTML = `<strong>0</strong> notas están esperando ser leídas.`;
     }catch(e){
@@ -644,7 +711,11 @@
 
   // ---------- Init ----------
   applyName();
-  refreshLandingCount();
+  if(!KVDB_BASE){
+    showScreen('screen-setup');
+  } else {
+    refreshLandingCount();
+  }
 </script>
 </body>
 </html>
