@@ -1,0 +1,650 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>¿Quién dijo esto?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500;1,600&family=Sora:wght@400;500;600;700&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#2B1B2E;
+    --ink-2:#241722;
+    --velvet:#3D2440;
+    --velvet-2:#4a2b4f;
+    --gold:#E8B94A;
+    --blush:#F2A6B0;
+    --paper:#FBF6EC;
+    --lilac:#B79CC4;
+    --radius:20px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(232,185,74,0.10), transparent 45%),
+      radial-gradient(circle at 85% 92%, rgba(242,166,176,0.10), transparent 45%),
+      var(--ink);
+    color:var(--paper);
+    font-family:'Sora', sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    width:100%;
+    max-width:480px;
+    min-height:100vh;
+    padding:2.2rem 1.4rem 3rem;
+    display:flex;
+    flex-direction:column;
+  }
+  .screen{ display:none; flex-direction:column; flex:1; animation:fadeIn .5s ease; }
+  .screen.active{ display:flex; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  .eyebrow{
+    display:inline-block; align-self:center;
+    background:rgba(232,185,74,0.14);
+    color:var(--gold);
+    border:1px solid rgba(232,185,74,0.35);
+    padding:.35rem .9rem;
+    border-radius:999px;
+    font-size:.72rem;
+    font-weight:600;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    margin-bottom:1.1rem;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-weight:600;
+    font-size:clamp(2rem, 8vw, 2.6rem);
+    line-height:1.08;
+    text-align:center;
+    margin:0 0 .7rem;
+  }
+  h2{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:1.5rem;
+    text-align:center;
+    margin:0 0 .5rem;
+  }
+  .sub{
+    text-align:center;
+    color:var(--lilac);
+    font-size:.98rem;
+    line-height:1.5;
+    margin:0 auto 1.6rem;
+    max-width:36ch;
+  }
+  .count-pill{
+    text-align:center;
+    font-size:.85rem;
+    color:var(--paper);
+    opacity:.75;
+    margin-bottom:2rem;
+  }
+  .spacer{ flex:1; }
+
+  .stack{ display:flex; flex-direction:column; gap:.8rem; }
+
+  .btn{
+    font-family:'Sora', sans-serif;
+    font-weight:700;
+    font-size:1rem;
+    border:none;
+    border-radius:999px;
+    padding:1rem 1.5rem;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+    width:100%;
+  }
+  .btn:active{ transform:scale(.98); }
+  .btn:focus-visible{ outline:3px solid var(--blush); outline-offset:3px; }
+  .btn-primary{ background:var(--gold); color:var(--ink); box-shadow:0 10px 24px rgba(232,185,74,0.25); }
+  .btn-primary:hover{ transform:translateY(-2px); }
+  .btn-primary:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+  .btn-ghost{ background:transparent; color:var(--paper); border:2px solid rgba(183,156,196,0.5); }
+  .btn-ghost:hover{ border-color:var(--lilac); }
+  .btn-text{
+    background:none; border:none; color:var(--lilac); font-size:.85rem;
+    text-decoration:underline; cursor:pointer; padding:.4rem; margin-top:.6rem;
+    align-self:center; font-family:'Sora', sans-serif;
+  }
+  .btn-text:hover{ color:var(--blush); }
+
+  label{
+    display:block;
+    font-size:.72rem;
+    font-weight:600;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--lilac);
+    margin-bottom:.4rem;
+  }
+  input[type="text"], textarea{
+    width:100%;
+    background:var(--paper);
+    color:var(--ink);
+    border:none;
+    border-radius:12px;
+    padding:.9rem 1rem;
+    font-family:'Sora', sans-serif;
+    font-size:1rem;
+    resize:vertical;
+  }
+  input[type="text"]:focus, textarea:focus{
+    outline:3px solid var(--gold); outline-offset:1px;
+  }
+  .field{ margin-bottom:1.2rem; }
+  .helper{ font-size:.8rem; color:var(--lilac); margin-top:1.4rem; line-height:1.5; }
+  .example{
+    background:rgba(255,255,255,0.05);
+    border-left:3px solid var(--gold);
+    padding:.8rem 1rem;
+    border-radius:8px;
+    font-size:.88rem;
+    color:var(--paper);
+    opacity:.9;
+    margin:1rem 0 1.4rem;
+    font-style:italic;
+  }
+  .error-msg{ color:var(--blush); font-size:.85rem; text-align:center; margin-top:.8rem; min-height:1.2em; }
+
+  .card-icon{
+    width:64px; height:64px; border-radius:50%;
+    background:var(--velvet);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.8rem;
+    margin:0 auto 1.2rem;
+    box-shadow:0 8px 20px rgba(0,0,0,.3);
+  }
+
+  .shake{ animation:shake .4s; }
+  @keyframes shake{
+    10%,90%{ transform:translateX(-2px); }
+    20%,80%{ transform:translateX(4px); }
+    30%,50%,70%{ transform:translateX(-8px); }
+    40%,60%{ transform:translateX(8px); }
+  }
+
+  /* Host game screen */
+  .progress-label{
+    text-align:center; font-size:.78rem; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--lilac); margin-bottom:1.2rem;
+  }
+  .note-stage{
+    perspective:1400px;
+    width:100%;
+    max-width:340px;
+    margin:0 auto 1.6rem;
+    min-height:280px;
+    position:relative;
+  }
+  .note-card{
+    position:relative;
+    width:100%;
+    height:280px;
+    transform-style:preserve-3d;
+    transition:transform .7s cubic-bezier(.45,.15,.2,1);
+  }
+  .note-card.flipped{ transform:rotateY(180deg); }
+  .note-face{
+    position:absolute; inset:0;
+    backface-visibility:hidden;
+    border-radius:18px;
+    padding:2.2rem 1.6rem 1.6rem;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center;
+    background:linear-gradient(160deg, var(--velvet), var(--velvet-2));
+    box-shadow:0 20px 45px rgba(0,0,0,.4);
+    transform:rotate(-1deg);
+  }
+  .note-back{ transform:rotate(-1deg) rotateY(180deg); }
+  .note-seal{
+    position:absolute; top:-20px; left:50%; transform:translateX(-50%);
+    width:46px; height:46px; border-radius:50%;
+    background:var(--gold); color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.3rem;
+    box-shadow:0 8px 16px rgba(0,0,0,.4);
+  }
+  .note-phrase{
+    font-family:'Caveat', cursive;
+    font-weight:600;
+    font-size:clamp(1.5rem, 6vw, 1.85rem);
+    line-height:1.3;
+    color:var(--paper);
+    margin:0;
+    max-height:190px;
+    overflow-y:auto;
+  }
+  .note-author-label{ font-size:.75rem; text-transform:uppercase; letter-spacing:.08em; color:var(--lilac); margin:0 0 .4rem; }
+  .note-author{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-weight:600;
+    font-size:1.7rem;
+    color:var(--gold);
+    margin:0;
+  }
+  .confetti-layer{
+    position:absolute; inset:0; pointer-events:none; overflow:visible;
+  }
+  .confetti-piece{
+    position:absolute; top:20%; width:7px; height:13px; opacity:.95;
+    animation:confetti-fall 1.3s ease-in forwards;
+  }
+  @keyframes confetti-fall{ to{ transform:translateY(240px) rotate(360deg); opacity:0; } }
+
+  .dash-count{
+    text-align:center; font-size:1.05rem; margin-bottom:1.6rem; color:var(--paper);
+  }
+  .dash-count strong{ color:var(--gold); font-size:1.4rem; }
+
+  footer{
+    text-align:center; font-size:.72rem; color:var(--lilac); opacity:.6; margin-top:2rem;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .note-card{ transition:none; }
+    .screen{ animation:none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===================== LANDING ===================== -->
+  <div class="screen active" id="screen-landing">
+    <div class="spacer" style="flex:0.3"></div>
+    <div class="eyebrow">🎂 Cumple de <span class="js-nombre"></span></div>
+    <h1>¿Quién dijo esto?</h1>
+    <p class="sub" style="max-width:42ch;">Este es un juego para ella, lol. Vamos a mandarle frases secretas que tengan que ver con ella.<br><br>Contá algo que solo vos y ella saben, agregale tu propio sazón — ella va a tener que adivinar quién lo dijo.</p>
+    <p class="sub" style="max-width:42ch; color:var(--gold); font-weight:600; opacity:.95;">get fun Mirely, we love you 💛</p>
+    <p class="count-pill" id="landingCount">Cargando notas recibidas…</p>
+    <div class="stack">
+      <button class="btn btn-primary" id="btnGoGuest">✍️ Escribir mi nota</button>
+      <button class="btn btn-ghost" id="btnGoHostGate">🎉 Modo anfitrión</button>
+    </div>
+    <div class="spacer"></div>
+    <footer>Juego para el cumpleaños de <span class="js-nombre"></span></footer>
+  </div>
+
+  <!-- ===================== GUEST FORM ===================== -->
+  <div class="screen" id="screen-guest-form">
+    <div class="card-icon">💌</div>
+    <h2>Contá algo que solo vos sabrías</h2>
+    <p class="sub">Una confesión, algo que hace siempre, un momento absurdo que solo ustedes recuerdan.</p>
+    <div class="example">"Una vez me hizo caminar 40 minutos porque juraba que el restaurante quedaba acá nomás."</div>
+    <div class="field">
+      <label for="inputName">nombre</label>
+      <input type="text" id="inputName" maxlength="40" placeholder="¿Quién sos?" required>
+    </div>
+    <div class="field">
+      <label for="inputPhrase">Tu nota sobre <span class="js-nombre"></span></label>
+      <textarea id="inputPhrase" rows="4" maxlength="220" placeholder="Escribí algo que solo vos podrías decir sobre ella..."></textarea>
+    </div>
+    <button class="btn btn-primary" id="btnSubmitNote">Sellar mi nota 💌</button>
+    <p class="error-msg" id="guestError"></p>
+    <button class="btn-text" id="btnBackFromGuest">← Volver</button>
+  </div>
+
+  <!-- ===================== GUEST DONE ===================== -->
+  <div class="screen" id="screen-guest-done">
+    <div class="spacer" style="flex:0.4"></div>
+    <div class="card-icon">🤫</div>
+    <h2>¡Tu nota fue sellada!</h2>
+    <p class="sub">Va a quedar en secreto.. Nadie sabrá que fuiste vos... todavía.</p>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- ===================== HOST GATE ===================== -->
+  <div class="screen" id="screen-host-gate">
+    <div class="spacer" style="flex:0.4"></div>
+    <div class="card-icon">🔒</div>
+    <h2>Modo anfitrión</h2>
+    <p class="sub">Este espacio es solo para quien organiza el juego en la fiesta.</p>
+    <div class="field">
+      <label for="inputPin">Código secreto</label>
+      <input type="text" id="inputPin" placeholder="••••" autocomplete="off">
+    </div>
+    <button class="btn btn-primary" id="btnCheckPin">Entrar</button>
+    <p class="error-msg" id="pinError"></p>
+    <button class="btn-text" id="btnBackFromGate">← Volver</button>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- ===================== HOST DASHBOARD ===================== -->
+  <div class="screen" id="screen-host-dashboard">
+    <div class="spacer" style="flex:0.3"></div>
+    <h2>Sala del anfitrión</h2>
+    <p class="dash-count" id="dashCount">Cargando notas…</p>
+    <p class="error-msg" id="startError"></p>
+    <div class="stack">
+      <button class="btn btn-primary" id="btnStartGame">Empezar la ronda 🎉</button>
+      <button class="btn btn-ghost" id="btnHostHome">Volver al inicio</button>
+    </div>
+
+    <div id="deleteZone">
+      <button class="btn-text" id="btnDeleteAll" style="color:var(--blush);">⚠️ Borrar todas las notas</button>
+    </div>
+    <div id="deleteConfirm" style="display:none; text-align:center; margin-top:.6rem;">
+      <p class="sub" style="color:var(--blush); margin-bottom:.8rem;">¿Seguro? Esto borra todas las notas para siempre.</p>
+      <div class="stack">
+        <button class="btn btn-primary" id="btnConfirmDelete" style="background:var(--blush);">Sí, borrar todo</button>
+        <button class="btn-text" id="btnCancelDelete">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+  </div>
+
+  <!-- ===================== HOST GAME ===================== -->
+  <div class="screen" id="screen-host-game">
+    <div class="spacer" style="flex:0.15"></div>
+    <p class="progress-label" id="gameProgress">Nota 1 de 1</p>
+    <div class="note-stage">
+      <div class="note-card" id="noteCard">
+        <div class="note-face note-front">
+          <div class="note-seal">💌</div>
+          <p class="note-phrase" id="notePhraseText">…</p>
+        </div>
+        <div class="note-face note-back">
+          <div class="note-seal">✨</div>
+          <p class="note-author-label">Fue...</p>
+          <p class="note-author" id="noteAuthorText">…</p>
+        </div>
+      </div>
+      <div class="confetti-layer" id="confettiLayer"></div>
+    </div>
+    <button class="btn btn-primary" id="btnRevealNext">Revelar quién lo dijo 🔍</button>
+    <button class="btn-text" id="btnEndGame">Terminar ronda</button>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- ===================== HOST END ===================== -->
+  <div class="screen" id="screen-host-end">
+    <div class="spacer" style="flex:0.4"></div>
+    <div class="card-icon">🎉</div>
+    <h2>¡Eso fue todo!</h2>
+    <p class="sub" id="endSummary">Se leyeron todas las notas sobre <span class="js-nombre"></span>.</p>
+    <div class="stack">
+      <button class="btn btn-primary" id="btnReplay">Jugar de nuevo desde el inicio</button>
+      <button class="btn btn-ghost" id="btnEndHome">Volver al inicio</button>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+</div>
+
+<script>
+  // ============ CONFIGURACIÓN — editá esto antes de compartir el link ============
+  const NOMBRE = "Mirely Paola";     // el nombre de tu amiga
+  const HOST_PIN = "2026";           // código para entrar al modo anfitrión
+  // =================================================================================
+
+  const PREFIX = 'note:';
+  let hostNotes = [];
+  let currentIndex = 0;
+  let isFlipped = false;
+
+  function showScreen(id){
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function applyName(){
+    document.querySelectorAll('.js-nombre').forEach(el => el.textContent = NOMBRE);
+  }
+
+  async function fetchNoteCount(){
+    try{
+      const result = await window.storage.list(PREFIX, true);
+      return (result && result.keys) ? result.keys.length : 0;
+    }catch(e){
+      console.error('No se pudo contar las notas', e);
+      return null;
+    }
+  }
+
+  async function fetchAllNotes(){
+    const notes = [];
+    try{
+      const listResult = await window.storage.list(PREFIX, true);
+      const keys = (listResult && listResult.keys) ? listResult.keys : [];
+      for(const key of keys){
+        try{
+          const r = await window.storage.get(key, true);
+          if(r && r.value){
+            const parsed = JSON.parse(r.value);
+            if(parsed && parsed.phrase) notes.push({ key, ...parsed });
+          }
+        }catch(e){ /* nota individual rota, la salteamos */ }
+      }
+    }catch(e){
+      console.error('No se pudieron cargar las notas', e);
+    }
+    return notes;
+  }
+
+  function shuffle(arr){
+    const a = [...arr];
+    for(let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  async function refreshLandingCount(){
+    const el = document.getElementById('landingCount');
+    const n = await fetchNoteCount();
+    if(n === null){ el.textContent = ''; return; }
+    if(n === 0){ el.textContent = 'Todavía no llegó ninguna nota — ¡sé el primero!'; }
+    else if(n === 1){ el.textContent = '1 nota ya llegó 💌'; }
+    else { el.textContent = `${n} notas ya llegaron 💌`; }
+  }
+
+  // ---------- Landing ----------
+  document.getElementById('btnGoGuest').addEventListener('click', () => {
+    document.getElementById('guestError').textContent = '';
+    showScreen('screen-guest-form');
+  });
+  document.getElementById('btnGoHostGate').addEventListener('click', () => {
+    document.getElementById('pinError').textContent = '';
+    document.getElementById('inputPin').value = '';
+    showScreen('screen-host-gate');
+  });
+
+  // ---------- Guest form ----------
+  document.getElementById('btnBackFromGuest').addEventListener('click', () => showScreen('screen-landing'));
+
+  document.getElementById('btnSubmitNote').addEventListener('click', async () => {
+    const nameEl = document.getElementById('inputName');
+    const phraseEl = document.getElementById('inputPhrase');
+    const errEl = document.getElementById('guestError');
+    const name = nameEl.value.trim();
+    const phrase = phraseEl.value.trim();
+
+    if(!name){ errEl.textContent = 'Falta tu nombre (nadie lo va a ver hasta la fiesta).'; return; }
+    if(!phrase){ errEl.textContent = 'Escribí tu nota antes de enviarla.'; return; }
+
+    const btn = document.getElementById('btnSubmitNote');
+    btn.disabled = true;
+    btn.textContent = 'Enviando…';
+    errEl.textContent = '';
+
+    const id = `${PREFIX}${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    const value = JSON.stringify({ name, phrase, submittedAt: Date.now() });
+
+    try{
+      const result = await window.storage.set(id, value, true);
+      if(!result) throw new Error('sin resultado');
+      nameEl.value = '';
+      phraseEl.value = '';
+      showScreen('screen-guest-done');
+    }catch(e){
+      console.error(e);
+      errEl.textContent = 'Algo falló al guardar tu nota. Probá de nuevo.';
+    }finally{
+      btn.disabled = false;
+      btn.textContent = 'Sellar mi nota 💌';
+    }
+  });
+
+  // (pantalla de confirmación ahora es un final sin más acciones)
+
+  // ---------- Host gate ----------
+  document.getElementById('btnBackFromGate').addEventListener('click', () => showScreen('screen-landing'));
+
+  document.getElementById('btnCheckPin').addEventListener('click', async () => {
+    const pin = document.getElementById('inputPin').value.trim();
+    const errEl = document.getElementById('pinError');
+    if(pin === HOST_PIN){
+      errEl.textContent = '';
+      showScreen('screen-host-dashboard');
+      document.getElementById('deleteZone').style.display = 'block';
+      document.getElementById('deleteConfirm').style.display = 'none';
+      document.getElementById('startError').textContent = '';
+      const dashEl = document.getElementById('dashCount');
+      dashEl.textContent = 'Cargando notas…';
+      const n = await fetchNoteCount();
+      if(n === null){ dashEl.textContent = 'No se pudo cargar el conteo.'; }
+      else { dashEl.innerHTML = `<strong>${n}</strong> ${n === 1 ? 'nota está' : 'notas están'} esperando ser leídas.`; }
+    } else {
+      const gate = document.getElementById('screen-host-gate');
+      errEl.textContent = 'Ese no es, probá de nuevo 👀';
+      gate.classList.add('shake');
+      setTimeout(() => gate.classList.remove('shake'), 400);
+    }
+  });
+
+  document.getElementById('btnHostHome').addEventListener('click', () => { showScreen('screen-landing'); refreshLandingCount(); });
+
+  document.getElementById('btnDeleteAll').addEventListener('click', () => {
+    document.getElementById('deleteZone').style.display = 'none';
+    document.getElementById('deleteConfirm').style.display = 'block';
+  });
+
+  document.getElementById('btnCancelDelete').addEventListener('click', () => {
+    document.getElementById('deleteConfirm').style.display = 'none';
+    document.getElementById('deleteZone').style.display = 'block';
+  });
+
+  document.getElementById('btnConfirmDelete').addEventListener('click', async () => {
+    const confirmBtn = document.getElementById('btnConfirmDelete');
+    const dashEl = document.getElementById('dashCount');
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Borrando…';
+    try{
+      const listResult = await window.storage.list(PREFIX, true);
+      const keys = (listResult && listResult.keys) ? listResult.keys : [];
+      for(const key of keys){
+        try{ await window.storage.delete(key, true); }catch(e){ /* seguimos igual */ }
+      }
+      dashEl.innerHTML = `<strong>0</strong> notas están esperando ser leídas.`;
+    }catch(e){
+      console.error(e);
+      dashEl.textContent = 'No se pudo borrar. Probá de nuevo.';
+    }finally{
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Sí, borrar todo';
+      document.getElementById('deleteConfirm').style.display = 'none';
+      document.getElementById('deleteZone').style.display = 'block';
+    }
+  });
+
+  // ---------- Host game ----------
+  document.getElementById('btnStartGame').addEventListener('click', async () => {
+    const btn = document.getElementById('btnStartGame');
+    btn.disabled = true;
+    btn.textContent = 'Cargando…';
+    const notes = await fetchAllNotes();
+    btn.disabled = false;
+    btn.textContent = 'Empezar la ronda 🎉';
+
+    const startErr = document.getElementById('startError');
+    if(notes.length === 0){
+      startErr.textContent = 'Todavía no llegó ninguna nota. Invitá a la gente a mandar la suya antes de empezar.';
+      return;
+    }
+    startErr.textContent = '';
+    hostNotes = shuffle(notes);
+    currentIndex = 0;
+    showScreen('screen-host-game');
+    renderCurrentNote();
+  });
+
+  function renderCurrentNote(){
+    const total = hostNotes.length;
+    const note = hostNotes[currentIndex];
+    isFlipped = false;
+    document.getElementById('gameProgress').textContent = `Nota ${currentIndex + 1} de ${total}`;
+    document.getElementById('notePhraseText').textContent = `"${note.phrase}"`;
+    document.getElementById('noteAuthorText').textContent = note.name;
+    document.getElementById('noteCard').classList.remove('flipped');
+    const btn = document.getElementById('btnRevealNext');
+    btn.textContent = 'Revelar quién lo dijo 🔍';
+    btn.disabled = false;
+  }
+
+  function spawnConfetti(){
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const layer = document.getElementById('confettiLayer');
+    const colors = ['#E8B94A', '#F2A6B0', '#B79CC4', '#FBF6EC'];
+    for(let i = 0; i < 18; i++){
+      const piece = document.createElement('span');
+      piece.className = 'confetti-piece';
+      piece.style.left = (Math.random() * 90 + 5) + '%';
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDelay = (Math.random() * 0.25) + 's';
+      layer.appendChild(piece);
+      setTimeout(() => piece.remove(), 1700);
+    }
+  }
+
+  document.getElementById('btnRevealNext').addEventListener('click', () => {
+    const btn = document.getElementById('btnRevealNext');
+    const total = hostNotes.length;
+
+    if(!isFlipped){
+      document.getElementById('noteCard').classList.add('flipped');
+      spawnConfetti();
+      isFlipped = true;
+      btn.textContent = (currentIndex === total - 1) ? 'Ver resumen 🎉' : 'Siguiente nota →';
+    } else {
+      if(currentIndex === total - 1){
+        document.getElementById('endSummary').innerHTML = `Se leyeron <strong>${total}</strong> notas sobre <span class="js-nombre">${NOMBRE}</span>. 🎉`;
+        showScreen('screen-host-end');
+      } else {
+        currentIndex++;
+        renderCurrentNote();
+      }
+    }
+  });
+
+  document.getElementById('btnEndGame').addEventListener('click', () => {
+    showScreen('screen-host-dashboard');
+  });
+
+  document.getElementById('btnReplay').addEventListener('click', () => {
+    hostNotes = shuffle(hostNotes);
+    currentIndex = 0;
+    showScreen('screen-host-game');
+    renderCurrentNote();
+  });
+
+  document.getElementById('btnEndHome').addEventListener('click', () => { showScreen('screen-landing'); refreshLandingCount(); });
+
+  // ---------- Init ----------
+  applyName();
+  refreshLandingCount();
+</script>
+</body>
+</html>
